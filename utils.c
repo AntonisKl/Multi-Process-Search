@@ -64,12 +64,32 @@ void handleFlags(int argc, char** argv, unsigned int* height, char** dataFileNam
     }
 }
 
-char stringToEntry(char* s, Entry* entry) {
+void read_from_pipe(int file) {
+    FILE* stream;
+    int c;
+    stream = fdopen(file, "r");
+    while ((c = fgetc(stream)) != EOF)
+        putchar(c);
+    fclose(stream);
+}
+
+/* Write some random text to the pipe. */
+
+void write_to_pipe(int file) {
+    FILE* stream;
+    stream = fdopen(file, "w");
+    fprintf(stream, "hello, world!\n");
+    fprintf(stream, "goodbye, world!\n");
+    fclose(stream);
+}
+
+char stringFromFileToEntry(char* s, Entry* entry) {
+    char* ptr;
     char intS[5];
     memcpy(intS, s, 4);
 
-    entry->AM = atoi(intS);
-    s+=4;
+    entry->AM = (int)strtol(intS, &ptr, 10);
+    s += 4;
     if (memcpy(entry->name, s, 15) == NULL)
         return 1;
     s += 15;
@@ -80,19 +100,59 @@ char stringToEntry(char* s, Entry* entry) {
     char floatS[5];
     memcpy(floatS, s, 4);
 
-    entry->salary = atof(floatS);
+    entry->salary = strtof(floatS, &ptr);
 
     return 0;
 }
 
+void stringToEntry(char* s, Entry* entry) {
+    char* ptr;
+    const char endOfField[2] = "$";
+    const char endOfEntry[2] = "&";
+    char* token;
+
+    token = strtok(s, endOfField);
+    entry->AM = (int)strtol(token, &ptr, 10);
+
+    token = strtok(NULL, endOfField);
+    strcpy(entry->name, token);
+
+    token = strtok(NULL, endOfField);
+    strcpy(entry->surname, token);
+
+    token = strtok(NULL, endOfEntry);
+    entry->salary = strtof(token, &ptr);
+
+    return;
+}
+
+char entryToString(Entry entry, char s[73]) {
+    char intS[12];
+    char floatS[20];
+    if (sprintf(intS, "%d", entry.AM) < 0)
+        return 1;
+    if (sprintf(floatS, "%f", entry.salary) < 0)
+        return 1;
+
+    strcat(s, intS);
+    strcat(s, "$");  // end of field
+    strcat(s, entry.name);
+    strcat(s, "$");
+    strcat(s, entry.surname);
+    strcat(s, "$");
+    strcat(s, floatS);
+    strcat(s, "&");  // end of entry
+}
+
 char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry) {
     // entry num = 5 -> read from position 5*sizeof(Entry)
+    unsigned int entriesToSkip = entryNum - 1;
 
-    fseek(fp, (entryNum * sizeof(Entry)) /* - 1*/, SEEK_SET);
+    fseek(fp, (entriesToSkip * sizeof(Entry)), SEEK_SET);
 
-    char* entryS = malloc(sizeof(Entry) + 1);
+    unsigned char entryS[sizeof(Entry) + 1];
 
-    fgets(entryS, sizeof(Entry) + 1, fp);
+    fread(entryS, sizeof(entryS), 1, fp);
 
-    return stringToEntry(entryS, entry);
+    return stringFromFileToEntry(entryS, entry);
 }

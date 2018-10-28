@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 typedef struct Entry {
     int AM;
@@ -14,7 +17,15 @@ typedef struct Entry {
 
 // void removeSpaces(char* str);
 
-char stringToEntry(char* s, Entry* entry);
+char stringFromFileToEntry(char* s, Entry* entry);
+
+void stringToEntry(char* s, Entry* entry);
+
+char entryToString(Entry entry, char s[73]);
+
+void read_from_pipe(int file);
+
+void write_to_pipe(int file);
 
 char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry);
 
