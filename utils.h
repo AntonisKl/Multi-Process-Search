@@ -7,6 +7,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <time.h>
+
+#define MAX_STRING_FLOAT_SIZE 20
+#define MAX_STRING_INT_SIZE 12
+#define MAX_STRING_ENTRY_SIZE 71
 
 typedef struct Entry {
     int AM;
@@ -17,7 +22,7 @@ typedef struct Entry {
 
 // void removeSpaces(char* str);
 
-char stringFromFileToEntry(char* s, Entry* entry);
+// char stringFromFileToEntry(char* s, Entry* entry);
 
 void stringToEntry(char* s, Entry* entry);
 

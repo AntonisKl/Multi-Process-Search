@@ -83,27 +83,27 @@ void write_to_pipe(int file) {
     fclose(stream);
 }
 
-char stringFromFileToEntry(char* s, Entry* entry) {
-    char* ptr;
-    char intS[5];
-    memcpy(intS, s, 4);
+// char stringFromFileToEntry(char* s, Entry* entry) {
+//     char* ptr;
+//     char intS[5];
+//     memcpy(intS, s, 4);
 
-    entry->AM = (int)strtol(intS, &ptr, 10);
-    s += 4;
-    if (memcpy(entry->name, s, 15) == NULL)
-        return 1;
-    s += 15;
-    if (memcpy(entry->surname, s, 25) == NULL)
-        return 1;
-    s += 25;
+//     entry->AM = (int)strtol(intS, &ptr, 10);
+//     s += 4;
+//     if (memcpy(entry->name, s, 15) == NULL)
+//         return 1;
+//     s += 15;
+//     if (memcpy(entry->surname, s, 25) == NULL)
+//         return 1;
+//     s += 25;
 
-    char floatS[5];
-    memcpy(floatS, s, 4);
+//     char floatS[5];
+//     memcpy(floatS, s, 4);
 
-    entry->salary = strtof(floatS, &ptr);
+//     entry->salary = strtof(floatS, &ptr);
 
-    return 0;
-}
+//     return 0;
+// }
 
 void stringToEntry(char* s, Entry* entry) {
     char* ptr;
@@ -127,14 +127,14 @@ void stringToEntry(char* s, Entry* entry) {
 }
 
 char entryToString(Entry entry, char s[73]) {
-    char intS[12];
-    char floatS[20];
+    char intS[MAX_STRING_INT_SIZE];
+    char floatS[MAX_STRING_FLOAT_SIZE];
     if (sprintf(intS, "%d", entry.AM) < 0)
         return 1;
     if (sprintf(floatS, "%f", entry.salary) < 0)
         return 1;
 
-    strcat(s, intS);
+    strcpy(s, intS);
     strcat(s, "$");  // end of field
     strcat(s, entry.name);
     strcat(s, "$");
@@ -150,9 +150,13 @@ char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry) {
 
     fseek(fp, (entriesToSkip * sizeof(Entry)), SEEK_SET);
 
-    unsigned char entryS[sizeof(Entry) + 1];
+    // unsigned char entryS[sizeof(Entry) + 1];
 
-    fread(entryS, sizeof(entryS), 1, fp);
+    if (fread(&entry, sizeof(entry), 1, fp) == sizeof(entry))
+        return 0;
+    else
+        return 1;
 
-    return stringFromFileToEntry(entryS, entry);
+    printf("Read entry: AM->%d, name->%s, surname->%s, salary->%f\n", entry->AM, entry->name, entry->surname, entry->salary);
+    // return stringFromFileToEntry(entryS, entry);
 }
