@@ -9,9 +9,10 @@
 #include <unistd.h>
 #include <time.h>
 
-#define MAX_STRING_FLOAT_SIZE 20
-#define MAX_STRING_INT_SIZE 12
-#define MAX_STRING_ENTRY_SIZE 71
+#define MAX_STRING_FLOAT_SIZE 20 // including end of string
+#define MAX_STRING_INT_SIZE 12 // including end of string
+#define MAX_STRING_ENTRY_SIZE 75 // MAYBEE 74 ??????? WITHOUT END OF ENTRY DELIMITER // 19 + 11 (not including end of string) + 15 + 25 + 4 (delimiters) + 1 (end of string)
+#define MAX_STRING_METADATA_SIZE 24 // 11 + 10 + 3
 
 typedef struct Entry {
     int AM;
@@ -32,8 +33,12 @@ void read_from_pipe(int file);
 
 void write_to_pipe(int file);
 
+void writeEntryToFile(char* entryS, FILE* fileP);
+
 char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry);
 
 void handleFlags(int argc, char** argv, unsigned int* height, char** dataFileName, char** pattern, char* skewFlag);
+
+void readAndSendResultsOfChild(int childFileDesc[2], int parentPipeDesc[2]);
 
 #endif
