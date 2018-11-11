@@ -111,17 +111,15 @@ void writeEntryToFile(char* entryS, FILE* fileP) {
     const char endOfEntry[2] = "&";
     char* token;
 
-    token = strtok(s, endOfField);
+    token = strtok(entryS, endOfField);
     fputs(token, fileP);
+    fputs(",", fileP);
 
-    token = strtok(NULL, endOfField);
-    fputs(token, fileP);
-
-    token = strtok(NULL, endOfField);
-    fputs(token, fileP);
-
-    token = strtok(NULL, endOfEntry);
-    fputs(token, fileP);
+    for (unsigned int i = 0; i < 8; i++) {
+        token = strtok(NULL, endOfField);
+        fputs(token, fileP);
+        fputs(",", fileP);
+    }
     fputs("\n", fileP);
 
     return;
@@ -142,6 +140,18 @@ void stringToEntry(char* s, Entry* entry) {
     token = strtok(NULL, endOfField);
     strcpy(entry->surname, token);
 
+    token = strtok(NULL, endOfField);
+    strcpy(entry->streetName, token);
+
+    token = strtok(NULL, endOfField);
+    entry->houseNumber = (int)strtol(token, &ptr, 10);
+
+    token = strtok(NULL, endOfField);
+    strcpy(entry->cityName, token);
+
+    token = strtok(NULL, endOfField);
+    strcpy(entry->postCode, token);
+
     token = strtok(NULL, endOfEntry);
     entry->salary = strtof(token, &ptr);
 
@@ -149,18 +159,29 @@ void stringToEntry(char* s, Entry* entry) {
 }
 
 char entryToString(Entry entry, char s[73]) {
-    char intS[MAX_STRING_INT_SIZE];
+    char int1S[MAX_STRING_INT_SIZE], int2S[MAX_STRING_INT_SIZE];
     char floatS[MAX_STRING_FLOAT_SIZE];
-    if (sprintf(intS, "%d", entry.AM) < 0)
+    if (sprintf(int1S, "%d", entry.AM) < 0)
         return 1;
     if (sprintf(floatS, "%f", entry.salary) < 0)
         return 1;
 
-    strcpy(s, intS);
+    if (sprintf(int2S, "%d", entry.houseNumber < 0))
+        return 1;
+
+    strcpy(s, int1S);
     strcat(s, "$");  // end of field
     strcat(s, entry.name);
     strcat(s, "$");
     strcat(s, entry.surname);
+    strcat(s, "$");
+    strcat(s, entry.streetName);
+    strcat(s, "$");
+    strcat(s, int2S);
+    strcat(s, "$");
+    strcat(s, entry.cityName);
+    strcat(s, "$");
+    strcat(s, entry.postCode);
     strcat(s, "$");
     strcat(s, floatS);
     strcat(s, "&");  // end of entry
@@ -177,7 +198,8 @@ char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry) {
     // unsigned char entryS[sizeof(Entry) + 1];
 
     if (fread(&entry, sizeof(entry), 1, fp) == sizeof(entry)) {
-        printf("Read entry: AM->%d, name->%s, surname->%s, salary->%f\n", entry->AM, entry->name, entry->surname, entry->salary);
+        printf("Read entry: AM->%d, name->%s, surname->%s, streetName->%s, houseNumber->%d, cityName->%s, postCode->%s, salary->%f\n",
+               entry->AM, entry->name, entry->surname, entry->streetName, entry->houseNumber, entry->cityName, entry->postCode, entry->salary);
         return 0;
     } else
         return 1;

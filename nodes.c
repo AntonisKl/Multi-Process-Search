@@ -5,7 +5,7 @@ void leafNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int
 
     unsigned int entriesRemaining = searchRangeEnd - searchRangeStart + 1;
     unsigned int curEntryNum = searchRangeStart;
-    char intS[MAX_STRING_INT_SIZE];
+    char int1S[MAX_STRING_INT_SIZE], int2S[MAX_STRING_INT_SIZE];
     char floatS[MAX_STRING_FLOAT_SIZE];
     struct timeval startTime, endTime;
     Entry entry;
@@ -20,11 +20,13 @@ void leafNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int
             exit(1);
         }
 
-        sprintf(intS, "%d", entry.AM);
+        sprintf(int1S, "%d", entry.AM);
         sprintf(floatS, "%f", entry.salary);
+        sprintf(int2S, "%d", entry.houseNumber);
 
-        if (strstr(intS, searchPattern) != NULL || strstr(floatS, searchPattern) != NULL ||
-            strstr(entry.name, searchPattern) != NULL || strstr(entry.surname, searchPattern) != NULL) {
+        if (strstr(int1S, searchPattern) != NULL || strstr(floatS, searchPattern) != NULL || strstr(int2S, searchPattern) != NULL ||
+            strstr(entry.name, searchPattern) != NULL || strstr(entry.surname, searchPattern) != NULL || strstr(entry.cityName, searchPattern) != NULL ||
+            strstr(entry.postCode, searchPattern) != NULL || strstr(entry.streetName, searchPattern) != NULL) {
             entryToString(entry, entryS);  // with end delimiter
             close(parentPipeDesc[0]);
             write(parentPipeDesc[1], entryS, /*strlen(entryS) + 1*/ MAX_STRING_ENTRY_SIZE);
@@ -33,6 +35,9 @@ void leafNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int
             // strcat(entriesFoundS, entryS);
             // patternFoundAtLeastOnce = 1;
         }
+
+        entriesRemaining--;
+        curEntryNum++;
     }
     gettimeofday(&endTime, NULL);
 
@@ -54,13 +59,15 @@ void leafNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int
 
     char metadata[MAX_STRING_METADATA_SIZE];  // pid + del + timeElapsed + end of metadata + end of string
 
-    sprintf(intS, "%d", getpid());
-    strcpy(metadata, intS);
+    // strcpy(int1S, ""); //    <--------------------  MAYBE USEFUL
+
+    sprintf(int1S, "%d", getpid());
+    strcpy(metadata, int1S);
     strcat(metadata, "$");
 
-    char uintS[12];
-    sprintf(uintS, "%u", endTime.tv_usec - startTime.tv_usec);
-    strcat(metadata, uintS);
+    // char uintS[12];
+    sprintf(int1S, "%u", endTime.tv_usec - startTime.tv_usec);
+    strcat(metadata, int1S);
     strcat(metadata, "&");
 
     close(parentPipeDesc[0]);
@@ -81,12 +88,25 @@ void leafNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int
     return;
 }
 
-char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int searchRangeEnd, char* searchPattern, unsigned int remainingTreeDepth, int parentPipeDesc[2], char isFirstSplitterMerger) {
+char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int searchRangeEnd, char* searchPattern,
+                           unsigned int remainingTreeDepth, int parentPipeDesc[2], char isFirstSplitterMerger, char skewFlag) {
     int child1FileDesc[2], child2FileDesc[2];
     struct timeval startTime, endTime;
     pid_t pid1 = -1, pid2 = -1;  // initialize for splitting code afterwards
+    unsigned int child1RangeStart, child1RangeEnd, child2RangeStart, child2RangeEnd;
 
     gettimeofday(&startTime, NULL);
+
+    child1RangeStart = searchRangeStart;
+    child2RangeEnd = searchRangeEnd;
+
+    unsigned int entriesNum = searchRangeEnd - searchRangeStart + 1;
+    if (skewFlag == 0) {
+        child1RangeEnd = entriesNum / 2;
+        child2RangeStart = (entriesNum / 2) + 1;
+    } else {
+        // code here for skew | calculate starts and ends
+    }
 
     if (pipe(child1FileDesc) == -1) {
         fprintf(stderr, "Pipe Failed");
@@ -113,11 +133,11 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
         }
         // child process 1
         if (pid1 == 0) {
-            splitterMergerNodeJob(dataFileName, /*calculate start of range*/, /*calculate end of range*/, searchPattern, remainingTreeDepth - 1, child1FileDesc, 0);
+            splitterMergerNodeJob(dataFileName, child1RangeStart, child1RangeEnd, searchPattern, remainingTreeDepth - 1, child1FileDesc, 0, skewFlag);
         }
         // child process 2
         if (pid2 == 0) {
-            splitterMergerNodeJob(dataFileName, /*calculate start of range*/, /*calculate end of range*/, searchPattern, remainingTreeDepth - 1, child2FileDesc, 0);
+            splitterMergerNodeJob(dataFileName, child2RangeStart, child2RangeEnd, searchPattern, remainingTreeDepth - 1, child2FileDesc, 0, skewFlag);
         }
 
         // parent process
@@ -141,11 +161,11 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
 
         // child process 1
         if (pid1 == 0) {
-            leafNodeJob(dataFileName, /*calculate start of range*/, /*calculate end of range*/, searchPattern, child1FileDesc);
+            leafNodeJob(dataFileName, child1RangeStart, child1RangeEnd, searchPattern, child1FileDesc);
         }
         // child process 2
         if (pid2 == 0) {
-            leafNodeJob(dataFileName, /*calculate start of range*/, /*calculate end of range*/, searchPattern, child2FileDesc);
+            leafNodeJob(dataFileName, child2RangeStart, child2RangeEnd, searchPattern, child2FileDesc);
         }
 
         // parent process
@@ -201,18 +221,37 @@ char rootNodeJob(int argc, char** argv, unsigned int* height, char** dataFileNam
 
     handleFlags(argc, argv, height, dataFileName, searchPattern, skewFlag);
 
+    long lSize;
+    unsigned int entriesNum;
+    FILE* inputFileP = fopen(dataFileName, "r");
+    unsigned int searchRangeStart, searchRangeEnd;
+
+    // check number of records
+    fseek(inputFileP, 0, SEEK_END);
+    lSize = ftell(inputFileP);
+    rewind(inputFileP);
+    entriesNum = (int)lSize / sizeof(Entry);
+
+    // if (skewFlag == 0) {
+    //     searchRangeStart =
+    // } else{
+    //     // CODE HERE
+    // }
+
+    fclose(inputFileP);
+
     pid = fork();
 
     if (pid < 0) {
         fprintf(stderr, "fork Failed");
         return 1;
     } else if (pid == 0) {
-        splitterMergerNodeJob(*dataFileName, /*range start*/, /*range end*/, searchPattern, height, childFileDesc, 1);
+        splitterMergerNodeJob(*dataFileName, 1, entriesNum, searchPattern, height, childFileDesc, 1, skewFlag);
     } else {
         FILE* outFileP;
         char entryS[MAX_STRING_ENTRY_SIZE];
         char metadata[MAX_STRING_METADATA_SIZE];
-        Entry resEntries[100 /* max entries number */];  /////////////////////////////////////////////// CHANGE THIS NUMBER
+        // Entry resEntries[100 /* max entries number */];  /////////////////////////////////////////////// CHANGE THIS NUMBER
 
         outFileP = fopen("results.txt", "w");
 
@@ -221,7 +260,7 @@ char rootNodeJob(int argc, char** argv, unsigned int* height, char** dataFileNam
         // printf("Concatenated string %s\n", concat_str);
         close(childFileDesc[0]);
 
-        unsigned int resIndex = 0;
+        // unsigned int resIndex = 0;
         while (strcmp(entryS, "end") != 0) {
             if (strcmp(entryS, "m")) {
                 close(childFileDesc[1]);
@@ -242,7 +281,7 @@ char rootNodeJob(int argc, char** argv, unsigned int* height, char** dataFileNam
                 // strcpy(resEntries[resIndex].surname, resEntry.surname);
                 // resEntries[resIndex].salary = resEntry.salary;
 
-                resIndex++;
+                // resIndex++;
             }
 
             close(childFileDesc[1]);
@@ -250,18 +289,26 @@ char rootNodeJob(int argc, char** argv, unsigned int* height, char** dataFileNam
             // printf("Concatenated string %s\n", concat_str);
             close(childFileDesc[0]);
         }
-
         fclose(outFileP);
 
-        sortNodeJob(resEntries, resIndex);
-        for (unsigned int i = 0; i < 2 ^ height - 1; i++) /* ^ ?????????????????*/ {
-            pid = wait(NULL);
-            printf("Process with pid: %d exited succesfully\n", pid);
+        // print statistics here
+
+        pid = fork();
+        if (pid < 0) {
+            fprintf(stderr, "fork Failed");
+            return 1;
+        } else if (pid == 0) {
+            sortNodeJob();
+        } else {
+            for (unsigned int i = 0; i < (int)pow((double)2, (double)((*height) - 1)); i++) /* ^ ?????????????????*/ {
+                pid = wait(NULL);
+                printf("Process with pid: %d exited succesfully\n", pid);
+            }
         }
     }
 }
 
-char sortNodeJob(Entry resEntries[], unsigned int resSize) {
+void sortNodeJob() {
     // pid_t pid = fork();
 
     // if (pid < 0) {

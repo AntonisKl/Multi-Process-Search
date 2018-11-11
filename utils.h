@@ -8,16 +8,21 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <time.h>
+#include <math.h>          ////////////////////////// REQUIRES SOME STUFF IN COMPILATION COMMAND
 
 #define MAX_STRING_FLOAT_SIZE 20 // including end of string
 #define MAX_STRING_INT_SIZE 12 // including end of string
-#define MAX_STRING_ENTRY_SIZE 75 // MAYBEE 74 ??????? WITHOUT END OF ENTRY DELIMITER // 19 + 11 (not including end of string) + 15 + 25 + 4 (delimiters) + 1 (end of string)
+#define MAX_STRING_ENTRY_SIZE 131 // MAYBEE 130 ??????? WITHOUT END OF ENTRY DELIMITER // 19 + 11 (not including end of string) + 15 + 25 + 4 (delimiters) + 1 (end of string)
 #define MAX_STRING_METADATA_SIZE 24 // 11 + 10 + 3
 
 typedef struct Entry {
     int AM;
-    char name[15];
-    char surname[25];
+    char name[20];
+    char surname[20];
+    char streetName[20];
+    int houseNumber;
+    char cityName[20];
+    char postCode[6];
     float salary;
 } Entry;
 
