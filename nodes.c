@@ -66,7 +66,7 @@ void leafNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int
     strcat(metadata, "$");
 
     // char uintS[12];
-    sprintf(int1S, "%u", endTime.tv_usec - startTime.tv_usec);
+    sprintf(int1S, "%lu", endTime.tv_usec - startTime.tv_usec);
     strcat(metadata, int1S);
     strcat(metadata, "&");
 
@@ -190,7 +190,7 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
         strcat(metadata, "$");
 
         char uintS[MAX_STRING_INT_SIZE];
-        sprintf(uintS, "%u", endTime.tv_usec - startTime.tv_usec);
+        sprintf(uintS, "%lu", endTime.tv_usec - startTime.tv_usec);
         strcat(metadata, uintS);
         strcat(metadata, "&");
 
@@ -215,6 +215,18 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
     return 0;
 }
 
+void sortNodeJob() {
+    // pid_t pid = fork();
+
+    // if (pid < 0) {
+    //     fprintf(stderr, "fork Failed");
+    //     return 1;
+    // } else if (pid == 0) {
+    char* args[] = {"sort", "--sort=-h", "results.txt", NULL};
+    execvp("sort", args);
+    // }
+}
+
 char rootNodeJob(int argc, char** argv, unsigned int* height, char** dataFileName, char** searchPattern, char* skewFlag) {
     pid_t pid;
     int childFileDesc[2];
@@ -223,7 +235,7 @@ char rootNodeJob(int argc, char** argv, unsigned int* height, char** dataFileNam
 
     long lSize;
     unsigned int entriesNum;
-    FILE* inputFileP = fopen(dataFileName, "r");
+    FILE* inputFileP = fopen(*dataFileName, "r");
     unsigned int searchRangeStart, searchRangeEnd;
 
     // check number of records
@@ -246,7 +258,7 @@ char rootNodeJob(int argc, char** argv, unsigned int* height, char** dataFileNam
         fprintf(stderr, "fork Failed");
         return 1;
     } else if (pid == 0) {
-        splitterMergerNodeJob(*dataFileName, 1, entriesNum, searchPattern, height, childFileDesc, 1, skewFlag);
+        splitterMergerNodeJob(*dataFileName, 1, entriesNum, *searchPattern, *height, childFileDesc, 1, *skewFlag);
     } else {
         FILE* outFileP;
         char entryS[MAX_STRING_ENTRY_SIZE];
@@ -306,15 +318,5 @@ char rootNodeJob(int argc, char** argv, unsigned int* height, char** dataFileNam
             }
         }
     }
-}
-
-void sortNodeJob() {
-    // pid_t pid = fork();
-
-    // if (pid < 0) {
-    //     fprintf(stderr, "fork Failed");
-    //     return 1;
-    // } else if (pid == 0) {
-    execvp("sort", "--sort=-h", "results.txt");
-    // }
+    return 0;
 }

@@ -1,5 +1,5 @@
 To do:
 
-    • functions→executable files and parameters→arguments of these exe files
+    • functions->executable files and parameters->arguments of these exe files
     • Handle and print metadata of all processes
     • Find a way to calculate search range for all processes

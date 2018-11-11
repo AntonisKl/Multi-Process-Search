@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <time.h>
+#include <sys/time.h>
 #include <math.h>          ////////////////////////// REQUIRES SOME STUFF IN COMPILATION COMMAND
 
 #define MAX_STRING_FLOAT_SIZE 20 // including end of string
