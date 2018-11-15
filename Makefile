@@ -2,19 +2,19 @@ CC = gcc
 CFLAGS  = -g -Wall
 
 
-all: mygraph rootNode splitterMergerNode leafNode
+all: myfind rootNode splitterMergerNode leafNode
 
 myfind:  myfind.o nodes.o utils.o
-	$(CC) $(CFLAGS) -o myfind myfind.o nodes.o utils.o
+	$(CC) $(CFLAGS) -o myfind myfind.o nodes.o utils.o -lm
 
 rootNode: rootNode.o nodes.o utils.o
-	$(CC) $(CFLAGS) -o executables/rootNode rootNode.o nodes.o utils.o
+	$(CC) $(CFLAGS) -o executables/rootNode rootNode.o nodes.o utils.o -lm
 
 splitterMergerNode: splitterMergerNode.o nodes.o utils.o
-	$(CC) $(CFLAGS) -o executables/splitterMergerNode splitterMergerNode.o nodes.o utils.o
+	$(CC) $(CFLAGS) -o executables/splitterMergerNode splitterMergerNode.o nodes.o utils.o -lm
 
 leafNode: leafNode.o nodes.o utils.o
-	$(CC) $(CFLAGS) -o executables/leafNode leafNode.o nodes.o utils.o
+	$(CC) $(CFLAGS) -o executables/leafNode leafNode.o nodes.o utils.o -lm
 
 myfind.o:  myfind.c
 	$(CC) $(CFLAGS) -c myfind.c

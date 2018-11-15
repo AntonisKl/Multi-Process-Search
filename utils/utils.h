@@ -44,6 +44,6 @@ char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry);
 
 void handleFlags(int argc, char** argv, unsigned int* height, char** dataFileName, char** pattern, char* skewFlag);
 
-void readAndSendResultsOfChild(int childFileDesc[2], int parentPipeDesc[2]);
+void readAndSendResultsOfChild(int childFileDesc[2], int parentPipeDesc[2], pid_t childPid);
 
 #endif

@@ -6,6 +6,8 @@ int main(int argc, char** argv) {
 
     handleFlags(argc, argv, &height, &dataFileName, &searchPattern, &skewFlag);
 
+    printf("\nArguments handled: File name->%s, search pattern->%s, height of tree->%u, skewFlag->%d\n\n", dataFileName, searchPattern, height, skewFlag);
+
     sprintf(heightS, "%u", height);
     sprintf(skewFlagS, "%c", skewFlag);
     

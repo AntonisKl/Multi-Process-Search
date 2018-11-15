@@ -142,6 +142,8 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
         child2RangeStart = (entriesNum / 2) + 1;
     } else {
         // code here for skew | calculate starts and ends
+        printf("skew = 1 not yet implemented\n");
+        exit(1);
     }
 
     if (pipe(child1FileDesc) == -1) {
@@ -180,8 +182,8 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
 
         // parent process
         if (pid1 > 0) {
-            readAndSendResultsOfChild(child1FileDesc, parentPipeDesc);
-            readAndSendResultsOfChild(child2FileDesc, parentPipeDesc);
+            readAndSendResultsOfChild(child1FileDesc, parentPipeDesc, pid1);
+            readAndSendResultsOfChild(child2FileDesc, parentPipeDesc, pid2);
         }
     } else if (remainingTreeDepth == 1) {
         pid1 = fork();
@@ -210,8 +212,8 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
 
         // parent process
         if (pid1 > 0) {
-            readAndSendResultsOfChild(child1FileDesc, parentPipeDesc);
-            readAndSendResultsOfChild(child2FileDesc, parentPipeDesc);
+            readAndSendResultsOfChild(child1FileDesc, parentPipeDesc, pid1);
+            readAndSendResultsOfChild(child2FileDesc, parentPipeDesc, pid2);
         }
     }
 
@@ -262,7 +264,7 @@ void sortNodeJob() {
     //     fprintf(stderr, "fork Failed");
     //     return 1;
     // } else if (pid == 0) {
-    char* args[] = {"sort", "--sort=-h", "results.txt", NULL};
+    char* args[] = {"sort", "--sort=human-numeric", "results.txt", NULL};
     execvp("sort", args);
     // }
 }
@@ -273,8 +275,8 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
 
     long lSize;
     unsigned int entriesNum;
-    FILE* inputFileP = fopen(*dataFileName, "r");
-    unsigned int searchRangeStart, searchRangeEnd;
+    FILE* inputFileP = fopen(dataFileName, "r");
+    // unsigned int searchRangeStart, searchRangeEnd;
 
     // check number of records
     fseek(inputFileP, 0, SEEK_END);
@@ -290,6 +292,12 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
 
     fclose(inputFileP);
 
+    if (entriesNum == 0)
+    {
+        printf("0 entries in file. Exiting...\n");
+        // exit(1);
+    }
+    printf("Forking in root node...\n");
     pid = fork();
 
     if (pid < 0) {
@@ -309,28 +317,31 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
         //                 childFileDesc0S, childFileDesc1S, "1", skewFlagS, NULL};
         // execvp(args[0], args);
 
-        execSplitterMergerNodeJob(dataFileName, searchRangeStart, searchRangeEnd, searchPattern, height - 1, childFileDesc, 1, skewFlag);
+        printf("Creating the first splitter/merger node...\n");
+        execSplitterMergerNodeJob(dataFileName, 1, entriesNum, searchPattern, height - 1, childFileDesc, 1, skewFlag);
 
         // splitterMergerNodeJob(dataFileName, 1, entriesNum, searchPattern, height, childFileDesc, 1, skewFlag);
     } else {
         FILE* outFileP;
         char entryS[MAX_STRING_ENTRY_SIZE];
         char metadata[MAX_STRING_METADATA_SIZE];
+        int eofFlag;
         // Entry resEntries[100 /* max entries number */];  /////////////////////////////////////////////// CHANGE THIS NUMBER
 
+        printf("Doing root node's job...\n");
         outFileP = fopen("results.txt", "w");
 
         close(childFileDesc[1]);
-        read(childFileDesc[0], entryS, MAX_STRING_ENTRY_SIZE);
-        // printf("Concatenated string %s\n", concat_str);
+        eofFlag = read(childFileDesc[0], entryS, MAX_STRING_ENTRY_SIZE);
+        printf("Read entry: %s\n", entryS);
         close(childFileDesc[0]);
 
         // unsigned int resIndex = 0;
-        while (strcmp(entryS, "end") != 0) {
+        while (strcmp(entryS, "end") != 0 && eofFlag != EOF) {
             if (strcmp(entryS, "m")) {
                 close(childFileDesc[1]);
-                read(childFileDesc[0], metadata, MAX_STRING_METADATA_SIZE);
-                // printf("Concatenated string %s\n", concat_str);
+                eofFlag = read(childFileDesc[0], metadata, MAX_STRING_METADATA_SIZE);
+                printf("Read entry: %s\n", entryS);
                 close(childFileDesc[0]);
 
                 // handle metadata of one process ////////////////////////////////////////////////// TO DO
@@ -350,7 +361,7 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
             }
 
             close(childFileDesc[1]);
-            read(childFileDesc[0], entryS, MAX_STRING_ENTRY_SIZE);
+            eofFlag = read(childFileDesc[0], entryS, MAX_STRING_ENTRY_SIZE);
             // printf("Concatenated string %s\n", concat_str);
             close(childFileDesc[0]);
         }
@@ -364,6 +375,7 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
             return 1;
         } else if (pid == 0) {
             sortNodeJob();
+            printf("Sort node's job executed.\n");
         } else {
             for (unsigned int i = 0; i < (int)pow((double)2, (double)((height)-1)); i++) /* ^ ?????????????????*/ {
                 pid = wait(NULL);

@@ -106,9 +106,9 @@ void write_to_pipe(int file) {
 // }
 
 void writeEntryToFile(char* entryS, FILE* fileP) {
-    char* ptr;
+    // char* ptr;
     const char endOfField[2] = "$";
-    const char endOfEntry[2] = "&";
+    // const char endOfEntry[2] = "&";
     char* token;
 
     token = strtok(entryS, endOfField);
@@ -207,7 +207,7 @@ char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry) {
     // return stringFromFileToEntry(entryS, entry);
 }
 
-void readAndSendResultsOfChild(int childFileDesc[2], int parentPipeDesc[2]) {
+void readAndSendResultsOfChild(int childFileDesc[2], int parentPipeDesc[2], pid_t childPid) {
     char entryS[MAX_STRING_ENTRY_SIZE];
     char metadata[MAX_STRING_METADATA_SIZE];
 
@@ -219,7 +219,8 @@ void readAndSendResultsOfChild(int childFileDesc[2], int parentPipeDesc[2]) {
     // close(fd1[1]);
 
     // // Wait for child to send a string
-    // wait(NULL);
+    waitpid(childPid, NULL, 0);
+    printf("Child with pid %d exited, so this process with pid %d can now read from the pipe", childPid, getpid());
 
     close(childFileDesc[1]);  // Close writing end of second pipe
 
