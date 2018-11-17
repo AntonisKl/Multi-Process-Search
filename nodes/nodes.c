@@ -503,12 +503,13 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
             fprintf(stderr, "fork Failed");
             return 1;
         } else if (pid == 0) {
+            pid = wait(NULL);
+            printf("Process with pid: %d exited succesfully\n", pid);
             sortNodeJob();
             printf("Sort node's job executed.\n");
         } else {
             // for (unsigned int i = 0; i < (int)pow((double)2, (double)((height) + 1)) - 1; i++) {
-            pid = wait(NULL);
-            printf("Process with pid: %d exited succesfully\n", pid);
+            
             pid = wait(NULL);
             printf("Process with pid: %d exited succesfully\n", pid);
             // }
