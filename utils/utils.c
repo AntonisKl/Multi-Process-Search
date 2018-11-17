@@ -161,7 +161,7 @@ void stringToEntry(char* s, Entry* entry) {
 char entryToString(Entry entry, char s[73]) {
     char int1S[MAX_STRING_INT_SIZE], int2S[MAX_STRING_INT_SIZE];
     char floatS[MAX_STRING_FLOAT_SIZE];
-    if (sprintf(int1S, "%d", entry.AM) < 0)
+    if (sprintf(int1S, "%ld", entry.AM) < 0)
         return 1;
     if (sprintf(floatS, "%f", entry.salary) < 0)
         return 1;
@@ -196,13 +196,12 @@ char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry) {
     fseek(fp, (entriesToSkip * sizeof(Entry)), SEEK_SET);
 
     // unsigned char entryS[sizeof(Entry) + 1];
-
-    if (fread(&entry, sizeof(entry), 1, fp) == sizeof(entry)) {
-        printf("Read entry: AM->%d, name->%s, surname->%s, streetName->%s, houseNumber->%d, cityName->%s, postCode->%s, salary->%f\n",
-               entry->AM, entry->name, entry->surname, entry->streetName, entry->houseNumber, entry->cityName, entry->postCode, entry->salary);
-        return 0;
-    } else
-        return 1;
+    fread(entry, sizeof(Entry), 1, fp);
+    printf("Read entry: AM->%ld, name->%s, surname->%s, streetName->%s, houseNumber->%d, cityName->%s, postCode->%s, salary->%f\n",
+           entry->AM, entry->name, entry->surname, entry->streetName, entry->houseNumber, entry->cityName, entry->postCode, entry->salary);
+    return 0;
+    // } else
+    //     return 1;
 
     // return stringFromFileToEntry(entryS, entry);
 }
@@ -217,9 +216,14 @@ void readAndSendResultsOfChild(int childFileDesc[2], int parentPipeDesc[2], pid_
     // // pipe.
     // write(fd1[1], input_str, strlen(input_str)+1);
     // close(fd1[1]);
-
+    printf("Waiting for child with pid: %d\n", childPid);
+    // close(childFileDesc[0]);
+    // close(childFileDesc[1]);
+    // close(parentPipeDesc[0]);
+    // close(parentPipeDesc[1]);
     // // Wait for child to send a string
-    waitpid(childPid, NULL, 0);
+    if (waitpid(childPid, NULL, WNOHANG) == 1)
+        perror("wait() error");
     printf("Child with pid %d exited, so this process with pid %d can now read from the pipe", childPid, getpid());
 
     close(childFileDesc[1]);  // Close writing end of second pipe

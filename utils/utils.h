@@ -16,7 +16,7 @@
 #define MAX_STRING_METADATA_SIZE 24 // 11 + 10 + 3
 
 typedef struct Entry {
-    int AM;
+    long AM;
     char name[20];
     char surname[20];
     char streetName[20];

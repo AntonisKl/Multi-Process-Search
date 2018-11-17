@@ -35,7 +35,7 @@ int main (int argc, char** argv) {
    fseek (fpb , 0 , SEEK_END);
    lSize = ftell (fpb);
    rewind (fpb);
-   numOfrecords = (int) lSize/sizeof(rec);
+   numOfrecords = (int) lSize/sizeof(MyRecord);
 
    printf("Records found in file %d \n", numOfrecords);
 //    sleep(5);
