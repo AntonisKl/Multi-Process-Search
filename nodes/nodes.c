@@ -497,14 +497,14 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
         fclose(outFileP);
 
         // print statistics here
-
+            pid = wait(NULL);
+            printf("Process with pid: %d exited succesfully\n", pid);
         pid = fork();
         if (pid < 0) {
             fprintf(stderr, "fork Failed");
             return 1;
         } else if (pid == 0) {
-            pid = wait(NULL);
-            printf("Process with pid: %d exited succesfully\n", pid);
+           
             sortNodeJob();
             printf("Sort node's job executed.\n");
         } else {
