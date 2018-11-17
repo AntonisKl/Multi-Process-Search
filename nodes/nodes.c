@@ -171,6 +171,7 @@ void leafNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int
     // write(pipeFileDescriptors[1], entriesFoundS, strlen(entriesFoundS) + 1);
     // close(pipeFileDescriptors[1]);
 
+    printf("closing file from leaf node\n");
     fclose(fp);
     return;
 }
@@ -506,6 +507,8 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
             printf("Sort node's job executed.\n");
         } else {
             // for (unsigned int i = 0; i < (int)pow((double)2, (double)((height) + 1)) - 1; i++) {
+            pid = wait(NULL);
+            printf("Process with pid: %d exited succesfully\n", pid);
             pid = wait(NULL);
             printf("Process with pid: %d exited succesfully\n", pid);
             // }
