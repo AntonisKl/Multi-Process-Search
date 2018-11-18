@@ -106,7 +106,7 @@ void write_to_pipe(int file) {
 // }
 
 void writeEntryToFile(char* entryS, FILE* fileP) {
-    // char* ptr;
+    char* ptr;
     const char endOfField[2] = "$";
     const char endOfEntry[2] = "&";
     char* token;
@@ -115,17 +115,13 @@ void writeEntryToFile(char* entryS, FILE* fileP) {
     fputs(token, fileP);
     fputs(",", fileP);
 
-    for (unsigned int i = 0; i < 6; i++) {
+    for (unsigned int i = 0; i < 8; i++) {
         token = strtok(NULL, endOfField);
         fputs(token, fileP);
         fputs(",", fileP);
     }
-
-    token = strtok(NULL, endOfEntry);
-    fputs(token, fileP);
-
     fputs("\n", fileP);
-    fflush(fileP);
+
     return;
 }
 
@@ -162,27 +158,17 @@ void stringToEntry(char* s, Entry* entry) {
     return;
 }
 
-char entryToString(Entry entry, char* s[73]) {
+char entryToString(Entry entry, char s[73]) {
     char int1S[MAX_STRING_INT_SIZE], int2S[MAX_STRING_INT_SIZE];
     char floatS[MAX_STRING_FLOAT_SIZE];
-    // if (sprintf(int1S, "%ld", entry.AM) < 0)
-    //     return 1;
-    // if (sprintf(floatS, "%f", entry.salary) < 0)
-    //     return 1;
+    if (sprintf(int1S, "%d", entry.AM) < 0)
+        return 1;
+    if (sprintf(floatS, "%f", entry.salary) < 0)
+        return 1;
 
-    // if (sprintf(int2S, "%d", entry.houseNumber < 0))
-    //     return 1;
+    if (sprintf(int2S, "%d", entry.houseNumber < 0))
+        return 1;
 
-    sprintf(int1S, "%ld", entry.AM);
-    sprintf(floatS, "%f", entry.salary);
-    sprintf(int2S, "%d", entry.houseNumber);
-
-    // printf("int string: %s\n", int1S);
-    // printf("float string: %s\n", floatS);
-    // printf("int2 string: %s\n", int2S);
-
-    // printf("IN ENTRY TO STRING\n");
-    // *s = "hello";
     strcpy(s, int1S);
     strcat(s, "$");  // end of field
     strcat(s, entry.name);
@@ -210,17 +196,18 @@ char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry) {
     fseek(fp, (entriesToSkip * sizeof(Entry)), SEEK_SET);
 
     // unsigned char entryS[sizeof(Entry) + 1];
-    fread(entry, sizeof(Entry), 1, fp);
-    // printf("Read entry: AM->%ld, name->%s, surname->%s, streetName->%s, houseNumber->%d, cityName->%s, postCode->%s, salary->%f\n",
-    //        entry->AM, entry->name, entry->surname, entry->streetName, entry->houseNumber, entry->cityName, entry->postCode, entry->salary);
-    return 0;
-    // } else
-    //     return 1;
+
+    if (fread(&entry, sizeof(entry), 1, fp) == sizeof(entry)) {
+        printf("Read entry: AM->%d, name->%s, surname->%s, streetName->%s, houseNumber->%d, cityName->%s, postCode->%s, salary->%f\n",
+               entry->AM, entry->name, entry->surname, entry->streetName, entry->houseNumber, entry->cityName, entry->postCode, entry->salary);
+        return 0;
+    } else
+        return 1;
 
     // return stringFromFileToEntry(entryS, entry);
 }
 
-void readAndSendResultsOfChild(char* childPipeName, int parentPipeDesc, pid_t childPid) {
+void readAndSendResultsOfChild(int childFileDesc[2], int parentPipeDesc[2]) {
     char entryS[MAX_STRING_ENTRY_SIZE];
     char metadata[MAX_STRING_METADATA_SIZE];
 
@@ -230,46 +217,30 @@ void readAndSendResultsOfChild(char* childPipeName, int parentPipeDesc, pid_t ch
     // // pipe.
     // write(fd1[1], input_str, strlen(input_str)+1);
     // close(fd1[1]);
-    // printf("Splitter with pid %d is waiting for child with pid: %d\n", getpid(), childPid);
-    // close(childFileDesc[0]);
-    // close(childFileDesc[1]);
-    // close(parentPipeDesc[0]);
-    // close(parentPipeDesc[1]);
 
-    // Wait for child to send a string
-    // if (waitpid(childPid, NULL, 0) == 1)
-    //     perror("wait() error");
-    int childPipeDesc = open(childPipeName, O_RDONLY);  // O_RDWR is here because if O_WRONLY is used the code would be blocked
+    // // Wait for child to send a string
+    // wait(NULL);
 
-    // printf("Child with pid %d exited, so this process with pid %d can now read from the pipe\n", childPid, getpid());
-
-    // close(childFileDesc[1]);  // Close writing end of second pipe
+    close(childFileDesc[1]);  // Close writing end of second pipe
 
     // Read string from child, print it and close
     // reading end.
-    int readReturn;
-    readReturn = read(childPipeDesc, entryS, MAX_STRING_ENTRY_SIZE);
-    // if (read(childPipeDesc, entryS, MAX_STRING_ENTRY_SIZE) < 0)
-    //     printf("Error in read()\n");
-    printf("Splitter with pid %d read entry string from child with pid %d: %s\n", childPid, getpid(), entryS);
+    read(childFileDesc[0], entryS, MAX_STRING_ENTRY_SIZE);
     // printf("Concatenated string %s\n", concat_str);
-    // close(childFileDesc[0]);
+    close(childFileDesc[0]);
 
-    while (/*entryS[0] != "m" &&*/ readReturn != EOF && readReturn > 0/*&& strcmp(entryS, "no_result") != 0*/) {
+    while (strcmp(entryS, "m") != 0 /*&& strcmp(entryS, "no_result") != 0*/) {
         // we got an entry !
 
-        // close(parentPipeDesc[0]);
-        printf("write trap1\n");
-        write(parentPipeDesc, entryS, /*strlen(entryS) + 1*/ MAX_STRING_ENTRY_SIZE);
-       printf("write trap2\n");
-        // close(parentPipeDesc[1]);
+        close(parentPipeDesc[0]);
+        write(parentPipeDesc[1], entryS, /*strlen(entryS) + 1*/ MAX_STRING_ENTRY_SIZE);
+        close(parentPipeDesc[1]);
 
         // read from child
-        // close(childFileDesc[1]);  // Close writing end of second pipe
-        readReturn = read(childPipeDesc, entryS, MAX_STRING_ENTRY_SIZE);
-        printf("Splitter with pid %d read entry string from child with pid %d: %s\n", childPid, getpid(), entryS);
+        close(childFileDesc[1]);  // Close writing end of second pipe
+        read(childFileDesc[0], entryS, MAX_STRING_ENTRY_SIZE);
         // printf("Concatenated string %s\n", concat_str);
-        // close(childFileDesc[0]);
+        close(childFileDesc[0]);
     }
 
     // if (strcmp(entryS, "no_result") == 0) {
@@ -278,26 +249,19 @@ void readAndSendResultsOfChild(char* childPipeName, int parentPipeDesc, pid_t ch
     //     close(parentPipeDesc[1]);
     //     return;
     // } else {
-    // close(parentPipeDesc[0]);
-    // write(parentPipeDesc, "m", /*strlen(entryS) + 1*/ 2);
-    // close(parentPipeDesc[1]);
+    close(parentPipeDesc[0]);
+    write(parentPipeDesc[1], "m", /*strlen(entryS) + 1*/ 2);
+    close(parentPipeDesc[1]);
 
     // get metadata and send to parent
     // read from child
-    // close(childFileDesc[1]);  // Close writing end of second pipe
-    // read(childPipeDesc, metadata, MAX_STRING_METADATA_SIZE);
+    close(childFileDesc[1]);  // Close writing end of second pipe
+    read(childFileDesc[0], metadata, MAX_STRING_METADATA_SIZE);
     // printf("Concatenated string %s\n", concat_str);
-    // close(childFileDesc[0]);
+    close(childFileDesc[0]);
 
-    // close(parentPipeDesc[0]);
-    // printf("Writing metadata: %s\n", metadata);
-    // write(parentPipeDesc, metadata, /*strlen(entryS) + 1*/ MAX_STRING_METADATA_SIZE);
-
-    close(childPipeDesc);
-    unlink(childPipeName);
-
-    printf("readAndSetResuls finished\n");
-    // close(parentPipeDesc);
-    // close(parentPipeDesc[1]);
+    close(parentPipeDesc[0]);
+    write(parentPipeDesc[1], metadata, /*strlen(entryS) + 1*/ MAX_STRING_METADATA_SIZE);
+    close(parentPipeDesc[1]);
     // }
 }

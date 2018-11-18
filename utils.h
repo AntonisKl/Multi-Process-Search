@@ -8,8 +8,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <fcntl.h> 
-#include <sys/stat.h> 
 #include <math.h>          ////////////////////////// REQUIRES SOME STUFF IN COMPILATION COMMAND
 
 #define MAX_STRING_FLOAT_SIZE 20 // including end of string
@@ -18,7 +16,7 @@
 #define MAX_STRING_METADATA_SIZE 24 // 11 + 10 + 3
 
 typedef struct Entry {
-    long AM;
+    int AM;
     char name[20];
     char surname[20];
     char streetName[20];
@@ -34,7 +32,7 @@ typedef struct Entry {
 
 void stringToEntry(char* s, Entry* entry);
 
-char entryToString(Entry entry, char* s[73]);
+char entryToString(Entry entry, char s[73]);
 
 void read_from_pipe(int file);
 
@@ -46,6 +44,6 @@ char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry);
 
 void handleFlags(int argc, char** argv, unsigned int* height, char** dataFileName, char** pattern, char* skewFlag);
 
-void readAndSendResultsOfChild(char* childPipeName, int parentPipeDesc, pid_t childPid);
+void readAndSendResultsOfChild(int childFileDesc[2], int parentPipeDesc[2]);
 
 #endif
