@@ -34,7 +34,7 @@ typedef struct Entry {
 
 void stringToEntry(char* s, Entry* entry);
 
-char entryToString(Entry entry, char* s[73]);
+// char entryToString(Entry entry, char* s[73]);
 
 void read_from_pipe(int file);
 

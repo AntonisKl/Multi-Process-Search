@@ -4,8 +4,7 @@ void execSplitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart
                                char* childPipeName, char isFirstSplitterMerger, char skewFlag, unsigned int entriesNum, unsigned int leafsNum,
                                unsigned int leafIndexRangeStart, unsigned int leafIndexRangeEnd) {
     char searchRangeEndS[MAX_STRING_INT_SIZE], searchRangeStartS[MAX_STRING_INT_SIZE], remainingTreeDepthS[MAX_STRING_INT_SIZE],
-        childFileDesc0S[MAX_STRING_INT_SIZE], childFileDesc1S[MAX_STRING_INT_SIZE], skewFlagS[2], isFirstSplitterMergerS[2],
-        entriesNumS[MAX_STRING_INT_SIZE], leafsNumS[MAX_STRING_INT_SIZE], leafIndexRangeStartS[MAX_STRING_INT_SIZE],
+        skewFlagS[2], isFirstSplitterMergerS[2], entriesNumS[MAX_STRING_INT_SIZE], leafsNumS[MAX_STRING_INT_SIZE], leafIndexRangeStartS[MAX_STRING_INT_SIZE],
         leafIndexRangeEndS[MAX_STRING_INT_SIZE];
 
     sprintf(searchRangeStartS, "%u", searchRangeStart);
@@ -40,7 +39,7 @@ void execSplitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart
 void execLeafNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int searchRangeEnd, char* searchPattern, char* childPipeName,
                      char skewFlag, unsigned int leafIndex, unsigned int entriesNum, unsigned int leafsNum) {
     char searchRangeEndS[MAX_STRING_INT_SIZE], searchRangeStartS[MAX_STRING_INT_SIZE],
-        childFileDesc0S[MAX_STRING_INT_SIZE], childFileDesc1S[MAX_STRING_INT_SIZE], leafIndexS[MAX_STRING_INT_SIZE], entriesNumS[MAX_STRING_INT_SIZE],
+        leafIndexS[MAX_STRING_INT_SIZE], entriesNumS[MAX_STRING_INT_SIZE],
         leafsNumS[MAX_STRING_INT_SIZE], skewFlagS[2];
 
     sprintf(searchRangeStartS, "%u", searchRangeStart);
@@ -183,7 +182,7 @@ void leafNodeJob(char* dataFileName, unsigned int searchRangeStart, unsigned int
 
     // strcpy(int1S, ""); //    <--------------------  MAYBE USEFUL
 
-    strcpy(metadata, "m");
+    strcpy(metadata, "ml");  // "l" indicates leaf
 
     sprintf(int1S, "%d", getpid());
     strcat(metadata, int1S);
@@ -226,10 +225,10 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
     sprintf(pidS, "%d", getpid());
     strcat(child2PipeName, pidS);
 
-    char *leafIndexRangeStartS[MAX_STRING_INT_SIZE], *leafIndexRangeEndS[MAX_STRING_INT_SIZE];
+    // char *leafIndexRangeStartS[MAX_STRING_INT_SIZE], *leafIndexRangeEndS[MAX_STRING_INT_SIZE];
 
-    sprintf(leafIndexRangeStartS, "%lu", leafIndexRangeStart);
-    sprintf(leafIndexRangeEndS, "%lu", leafIndexRangeEnd);
+    // sprintf(leafIndexRangeStartS, "%u", leafIndexRangeStart);
+    // sprintf(leafIndexRangeEndS, "%u", leafIndexRangeEnd);
 
     struct timeval startTime, endTime;
     pid_t pid1 = -1, pid2 = -1;  // initialize for splitting code afterwards
@@ -313,7 +312,6 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
 
         // parent process
         if (pid1 > 0 && pid2 > 0) {
-            printf("WAITING FOR CHILDREN 22222222222222222222222\n");
             parentPipeDesc = open(parentPipeName, O_WRONLY);
             readAndSendResultsOfChild(child1PipeName, parentPipeDesc, pid1);
             readAndSendResultsOfChild(child2PipeName, parentPipeDesc, pid2);
@@ -381,7 +379,7 @@ char splitterMergerNodeJob(char* dataFileName, unsigned int searchRangeStart, un
         // write(parentPipeDesc, "m", /*strlen(entryS) + 1*/ 2);
         // close(parentPipeDesc[1]);
 
-        strcpy(metadata, "m");
+        strcpy(metadata, "ms");  // "s" indicates splitter/merger
 
         char intS[MAX_STRING_INT_SIZE];
         sprintf(intS, "%d", getpid());
@@ -456,7 +454,7 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
     rewind(inputFileP);
     entriesNum = (int)lSize / sizeof(Entry);
 
-    printf("Entries in file: %u\n", entriesNum);
+    // printf("Entries in file: %u\n", entriesNum);
 
     // if (pipe(childFileDesc) == -1) {
     //     fprintf(stderr, "Pipe Failed");
@@ -519,8 +517,20 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
     } else {
         FILE* outFileP;
         char entryS[MAX_STRING_ENTRY_SIZE];
-        char metadata[MAX_STRING_METADATA_SIZE];
+        // char metadata[MAX_STRING_METADATA_SIZE];
         int readReturn;
+
+        unsigned int size = (int)pow(2, height + 1) - 2;
+        int pids[size];
+        long unsigned int times[size], leafNodesTotalTime = 0, splitterMergerNodesTotalTime = 0;
+        char isLeaf[size];
+        long unsigned int programTotalTime = 0;
+        unsigned int splitterMergerNodesNum = pow(2, height + 1) - 1 - pow(2, height);
+        long double averageLeafNodesTime, averageSplitterMergerNodesTime;
+
+        // for (unsigned int i = 0; i < size; i++)
+        //     pids[i] = -1;
+
         // Entry resEntries[100 /* max entries number */];  /////////////////////////////////////////////// CHANGE THIS NUMBER
 
         printf("Doing root node's job...\n");
@@ -533,29 +543,51 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
         printf("Root opened pipe\n");
 
         // close(childFileDesc[1]);
-        printf("Root: Will read 1st entry\n");
+        // printf("Root: Will read 1st entry\n");
 
         readReturn = read(childFileDesc, entryS, MAX_STRING_ENTRY_SIZE);
-        printf("Root: Read entry: %s\n", entryS);
+        // printf("Root: Read entry: %s\n", entryS);
         // close(childFileDesc[0]);
 
         // while (strcmp(entryS, "") == 0)
         //     ;
 
+        unsigned int index = 0;
+        char *token, *ptr;
         // unsigned int resIndex = 0;
-        while (strcmp(entryS, "end") != 0 && readReturn != EOF && readReturn > 0) {
+        while (strcmp(entryS, "end") != 0 && readReturn > 0) {
             if (entryS[0] == 'm') {
-                // close(childFileDesc[1]);
-                // readReturn = read(childFileDesc, metadata, MAX_STRING_METADATA_SIZE);
+                // char isLeaf = 0, isSplitterMerger = 0;
+                isLeaf[index] = 0;
+                if (entryS[1] == 'l')
+                    isLeaf[index] = 1;
+                // else if (entryS[1] == 's')
+                //     isLeaf[index] = 0;  // so it is a splitter/merger
+
                 for (unsigned int i = 0; i < MAX_STRING_ENTRY_SIZE; i++) {
-                    if (entryS[i + 1] != '\0')
-                        entryS[i] = entryS[i + 1];
+                    if (entryS[i + 2] != '\0')
+                        entryS[i] = entryS[i + 2];
                     else {
                         entryS[i] = '\0';
+                        entryS[i + 1] = '\0';
                         break;
                     }
                 }
-                printf("Root: Read metadata: %s\n", entryS);
+
+                // manage metadata
+                token = strtok(entryS, "$");
+                pids[index] = atoi(token);
+
+                token = strtok(NULL, "&");
+                times[index] = strtol(token, &ptr, 10);
+
+                if (isLeaf[index])
+                    leafNodesTotalTime += times[index];
+                else
+                    splitterMergerNodesTotalTime += times[index];
+
+                index++;
+
                 // close(childFileDesc[0]);
 
                 // handle metadata of one process ////////////////////////////////////////////////// TO DO
@@ -564,10 +596,10 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
                 // stringToEntry(entryS, &resEntry);
 
                 // print entry to file to a new line
-                printf("trap1\n");
+                // printf("trap1\n");
                 writeEntryToFile(entryS, outFileP);  ////////////////////// CAUSES SEGMENTATION
-                printf("trap2\n");
-                printf("Root: Read entry: %s\n", entryS);
+                // printf("trap2\n");
+                // printf("Root: Read entry: %s\n", entryS);
 
                 // resEntries[resIndex].AM = resEntry.AM;
                 // strcpy(resEntries[resIndex].name, resEntry.name);
@@ -588,8 +620,28 @@ char rootNodeJob(unsigned int height, char* dataFileName, char* searchPattern, c
         close(childFileDesc);
         unlink(childPipeName);
         fclose(outFileP);
-        printf("HELLO END OF ROOT\n");
+        // printf("HELLO END OF ROOT\n");
         // print statistics here
+
+        for (unsigned int i = 0; i < index; i++)
+            programTotalTime += times[index];
+
+        averageLeafNodesTime = (long double)leafNodesTotalTime / leafsNum;
+        averageSplitterMergerNodesTime = (long double)splitterMergerNodesTotalTime / splitterMergerNodesNum;
+
+        printf("\n\nStatistics:\n");
+
+        for (unsigned int i = 0; i < index; i++) {
+            if (isLeaf[i])
+                printf("Leaf ");
+            else
+                printf("Splitter/Merger ");
+
+            printf("with pid %d took %lu microseconds to complete.\n", pids[i], times[i]);
+        }
+
+        printf("\nTotal program time: %lu\nTotal time of leaf nodes: %lu microseconds\nTotal time of splitter/merger nodes: %lu microseconds\nAverage time of leaf nodes: %Lf microseconds\nAverage time of splitter/merger nodes: %Lf microseconds\n",
+               programTotalTime, leafNodesTotalTime, splitterMergerNodesTotalTime, averageLeafNodesTime, averageSplitterMergerNodesTime);
 
         pid = fork();
         if (pid < 0) {

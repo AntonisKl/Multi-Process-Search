@@ -162,46 +162,46 @@ void stringToEntry(char* s, Entry* entry) {
     return;
 }
 
-char entryToString(Entry entry, char* s[73]) {
-    char int1S[MAX_STRING_INT_SIZE], int2S[MAX_STRING_INT_SIZE];
-    char floatS[MAX_STRING_FLOAT_SIZE];
-    // if (sprintf(int1S, "%ld", entry.AM) < 0)
-    //     return 1;
-    // if (sprintf(floatS, "%f", entry.salary) < 0)
-    //     return 1;
+// char entryToString(Entry entry, char* s[73]) {
+//     char int1S[MAX_STRING_INT_SIZE], int2S[MAX_STRING_INT_SIZE];
+//     char floatS[MAX_STRING_FLOAT_SIZE];
+//     // if (sprintf(int1S, "%ld", entry.AM) < 0)
+//     //     return 1;
+//     // if (sprintf(floatS, "%f", entry.salary) < 0)
+//     //     return 1;
 
-    // if (sprintf(int2S, "%d", entry.houseNumber < 0))
-    //     return 1;
+//     // if (sprintf(int2S, "%d", entry.houseNumber < 0))
+//     //     return 1;
 
-    sprintf(int1S, "%ld", entry.AM);
-    sprintf(floatS, "%f", entry.salary);
-    sprintf(int2S, "%d", entry.houseNumber);
+//     sprintf(int1S, "%ld", entry.AM);
+//     sprintf(floatS, "%f", entry.salary);
+//     sprintf(int2S, "%d", entry.houseNumber);
 
-    // printf("int string: %s\n", int1S);
-    // printf("float string: %s\n", floatS);
-    // printf("int2 string: %s\n", int2S);
+//     // printf("int string: %s\n", int1S);
+//     // printf("float string: %s\n", floatS);
+//     // printf("int2 string: %s\n", int2S);
 
-    // printf("IN ENTRY TO STRING\n");
-    // *s = "hello";
-    strcpy(s, int1S);
-    strcat(s, "$");  // end of field
-    strcat(s, entry.name);
-    strcat(s, "$");
-    strcat(s, entry.surname);
-    strcat(s, "$");
-    strcat(s, entry.streetName);
-    strcat(s, "$");
-    strcat(s, int2S);
-    strcat(s, "$");
-    strcat(s, entry.cityName);
-    strcat(s, "$");
-    strcat(s, entry.postCode);
-    strcat(s, "$");
-    strcat(s, floatS);
-    strcat(s, "&");  // end of entry
+//     // printf("IN ENTRY TO STRING\n");
+//     // *s = "hello";
+//     strcpy(s, int1S);
+//     strcat(s, "$");  // end of field
+//     strcat(s, entry.name);
+//     strcat(s, "$");
+//     strcat(s, entry.surname);
+//     strcat(s, "$");
+//     strcat(s, entry.streetName);
+//     strcat(s, "$");
+//     strcat(s, int2S);
+//     strcat(s, "$");
+//     strcat(s, entry.cityName);
+//     strcat(s, "$");
+//     strcat(s, entry.postCode);
+//     strcat(s, "$");
+//     strcat(s, floatS);
+//     strcat(s, "&");  // end of entry
 
-    return 0;
-}
+//     return 0;
+// }
 
 char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry) {
     // entry num = 5 -> read from position 5*sizeof(Entry)
@@ -222,7 +222,7 @@ char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry) {
 
 void readAndSendResultsOfChild(char* childPipeName, int parentPipeDesc, pid_t childPid) {
     char entryS[MAX_STRING_ENTRY_SIZE];
-    char metadata[MAX_STRING_METADATA_SIZE];
+    // char metadata[MAX_STRING_METADATA_SIZE];
 
     // close(childFileDesc[0]);  // Close reading end of first pipe
 
@@ -259,9 +259,7 @@ void readAndSendResultsOfChild(char* childPipeName, int parentPipeDesc, pid_t ch
         // we got an entry !
 
         // close(parentPipeDesc[0]);
-        printf("write trap1\n");
         write(parentPipeDesc, entryS, /*strlen(entryS) + 1*/ MAX_STRING_ENTRY_SIZE);
-       printf("write trap2\n");
         // close(parentPipeDesc[1]);
 
         // read from child
