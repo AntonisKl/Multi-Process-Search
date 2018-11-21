@@ -5,16 +5,16 @@ CFLAGS  = -g -Wall
 all: myfind rootNode splitterMergerNode leafNode
 
 myfind:  myfind.o nodes.o utils.o
-	$(CC) $(CFLAGS) -o myfind myfind.o nodes.o utils.o -lm
+	$(CC) $(CFLAGS) -o myfind myfind.o nodes.o utils.o -lm -fno-stack-protector
 
 rootNode: rootNode.o nodes.o utils.o
-	$(CC) $(CFLAGS) -o executables/rootNode rootNode.o nodes.o utils.o -lm
+	$(CC) $(CFLAGS) -o executables/rootNode rootNode.o nodes.o utils.o -lm -fno-stack-protector
 
 splitterMergerNode: splitterMergerNode.o nodes.o utils.o
-	$(CC) $(CFLAGS) -o executables/splitterMergerNode splitterMergerNode.o nodes.o utils.o -lm
+	$(CC) $(CFLAGS) -o executables/splitterMergerNode splitterMergerNode.o nodes.o utils.o -lm -fno-stack-protector
 
 leafNode: leafNode.o nodes.o utils.o
-	$(CC) $(CFLAGS) -o executables/leafNode leafNode.o nodes.o utils.o -lm
+	$(CC) $(CFLAGS) -o executables/leafNode leafNode.o nodes.o utils.o -lm -fno-stack-protector
 
 myfind.o:  myfind.c
 	$(CC) $(CFLAGS) -c myfind.c

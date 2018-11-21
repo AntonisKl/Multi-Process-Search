@@ -10,14 +10,15 @@
 #include <sys/time.h>
 #include <fcntl.h> 
 #include <sys/stat.h> 
-#include <math.h>          ////////////////////////// REQUIRES SOME STUFF IN COMPILATION COMMAND
+#include <math.h>
+#include <signal.h>
 
 #define MAX_STRING_FLOAT_SIZE 20 // including end of string
 #define MAX_STRING_INT_SIZE 12 // including end of string
-#define MAX_STRING_ENTRY_SIZE 131 // MAYBEE 130 ??????? WITHOUT END OF ENTRY DELIMITER // 19 + 11 (not including end of string) + 15 + 25 + 4 (delimiters) + 1 (end of string)
+#define MAX_STRING_RECORD_SIZE 131 // 19 + 11 (not including end of string) + 15 + 25 + 4 (delimiters) + 1 (end of string)
 #define MAX_STRING_METADATA_SIZE 24 // 11 + 10 + 3
 
-typedef struct Entry {
+typedef struct Record {
     long AM;
     char name[20];
     char surname[20];
@@ -26,26 +27,22 @@ typedef struct Entry {
     char cityName[20];
     char postCode[6];
     float salary;
-} Entry;
+} Record;
 
-// void removeSpaces(char* str);
+// converts a string to Record
+void stringToRecord(char* s, Record* entry);
 
-// char stringFromFileToEntry(char* s, Entry* entry);
+// writes a record to ASCII file
+void writeRecordToFile(char* entryS, FILE* fileP);
 
-void stringToEntry(char* s, Entry* entry);
+// reads a record that is in the entryNum-th place in a binary file
+char readRecordFromFile(FILE* fp, unsigned int entryNum, Record* entry);
 
-// char entryToString(Entry entry, char* s[73]);
-
-void read_from_pipe(int file);
-
-void write_to_pipe(int file);
-
-void writeEntryToFile(char* entryS, FILE* fileP);
-
-char readEntryFromFile(FILE* fp, unsigned int entryNum, Entry* entry);
-
+// handles the flags that are passed as arguments in the myfind executable
 void handleFlags(int argc, char** argv, unsigned int* height, char** dataFileName, char** pattern, char* skewFlag);
 
+// this function is used only by Splitters/Mergers for them to read data from the childPipeName named pipe and write them to their parent's pipe
+// which has parentPipeDesc as a descriptor
 void readAndSendResultsOfChild(char* childPipeName, int parentPipeDesc, pid_t childPid);
 
 #endif

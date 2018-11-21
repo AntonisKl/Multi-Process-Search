@@ -1,4 +1,0 @@
-To do:
-
-    • Handle and print metadata of all processes
-    • Find a way to calculate search range for all processes
